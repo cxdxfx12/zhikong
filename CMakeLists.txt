@@ -30,6 +30,7 @@ set(SOURCES
     src/ui/ColumnManageDialog.cpp
     src/ui/ImportDialog.cpp
     src/ui/ChartDialog.cpp
+    src/ui/CompareDialog.cpp
     src/service/AggregationService.cpp
     src/service/ImportService.cpp
     src/service/ExportService.cpp
@@ -53,6 +54,7 @@ set(HEADERS
     src/ui/ColumnManageDialog.h
     src/ui/ImportDialog.h
     src/ui/ChartDialog.h
+    src/ui/CompareDialog.h
     src/service/AggregationService.h
     src/service/ImportService.h
     src/service/ExportService.h

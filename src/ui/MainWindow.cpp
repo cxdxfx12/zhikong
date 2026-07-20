@@ -4,6 +4,7 @@
 #include "ui/ColumnManageDialog.h"
 #include "ui/ImportDialog.h"
 #include "ui/ChartDialog.h"
+#include "ui/CompareDialog.h"
 #include "db/Database.h"
 #include "db/EntityDao.h"
 #include "db/DailyDao.h"
@@ -95,6 +96,9 @@ void MainWindow::setupMenuBar() {
 
     m_actRefresh = dataMenu->addAction("刷新(&R)");
     m_actRefresh->setShortcut(QKeySequence("F5"));
+    dataMenu->addAction("环比对比...");
+    connect(dataMenu->actions().last(), &QAction::triggered, this, [this]() { CompareDialog(this).exec(); });
+
     dataMenu->addAction("清空筛选");
     connect(dataMenu->actions().last(), &QAction::triggered, this, [this]() {
         m_startDateEdit->setDate(DailyDao::getEarliestDate());
@@ -236,6 +240,10 @@ void MainWindow::setupToolBar() {
     auto* exportBtn = new QPushButton("📤 导出");
     toolbar->addWidget(exportBtn);
     connect(exportBtn, &QPushButton::clicked, this, &MainWindow::onExportExcel);
+
+    auto* compareBtn = new QPushButton("📈 环比");
+    toolbar->addWidget(compareBtn);
+    connect(compareBtn, &QPushButton::clicked, this, [this]() { CompareDialog(this).exec(); });
 
     toolbar->addSeparator();
 
