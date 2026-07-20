@@ -116,6 +116,11 @@ void CompareDialog::setupUI() {
     connect(m_refreshBtn, &QPushButton::clicked, this, &CompareDialog::onRefresh);
     connect(exportBtn, &QPushButton::clicked, this, &CompareDialog::onExport);
     connect(m_periodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CompareDialog::onPeriodChanged);
+    // Auto-compute on date changes
+    connect(m_startCur, &QDateEdit::dateChanged, this, &CompareDialog::onRefresh);
+    connect(m_endCur, &QDateEdit::dateChanged, this, &CompareDialog::onRefresh);
+    connect(m_startPrev, &QDateEdit::dateChanged, this, &CompareDialog::onRefresh);
+    connect(m_endPrev, &QDateEdit::dateChanged, this, &CompareDialog::onRefresh);
     onPeriodChanged(0);
 }
 
@@ -125,9 +130,11 @@ void CompareDialog::populateEntities() {
     auto tree = EntityDao::getTree();
     for(const auto& comp:tree) {
         auto* cb = new QCheckBox(comp.entity.name); cb->setProperty("eid",comp.entity.id); cb->setChecked(true);
+        connect(cb, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
         m_entityChecks<<cb; m_entityLayout2->addWidget(cb);
         for(const auto& ctr:comp.children) {
             auto* cb2 = new QCheckBox("  "+ctr.entity.name); cb2->setProperty("eid",ctr.entity.id); cb2->setChecked(true);
+            connect(cb2, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
             m_entityChecks<<cb2; m_entityLayout2->addWidget(cb2);
         }
     }
@@ -138,6 +145,7 @@ void CompareDialog::populateMetrics() {
     if(!m_metricLayout2) return;
     for(const auto& col:ColumnDao::getAll(false)) {
         auto* cb = new QCheckBox(col.displayNameWithUnit()); cb->setProperty("cid",col.id); cb->setChecked(true);
+        connect(cb, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
         m_metricChecks<<cb; m_metricLayout2->addWidget(cb);
     }
 }
