@@ -75,8 +75,8 @@ bool ExportService::exportToExcel(const QString& filePath,
     return xlsx.saveAs(filePath);
 #else
     // Fallback to CSV
-    QString csvPath = filePath;
-    csvPath.replace(".xlsx", ".csv");
-    return exportToCsv(csvPath, rows, columns);
+    Q_UNUSED(filePath); Q_UNUSED(rows); Q_UNUSED(columns);
+    qWarning() << "QXlsx not available, Excel export not supported. Install QXlsx for .xlsx export.";
+    return false;
 #endif
 }

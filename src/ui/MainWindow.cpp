@@ -24,6 +24,7 @@
 #include <QShortcut>
 #include <QLabel>
 #include <QButtonGroup>
+#include <QActionGroup>
 #include <QSqlQuery>
 
 MainWindow::MainWindow(QWidget* parent)
@@ -37,8 +38,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     // Load recent 7 days by default, or today if DB is empty
     QDate latest = DailyDao::getLatestDate();
-    QDate today = QDate::currentDate();
-    if (!latest.isValid() || latest > today) latest = today;
+    if (!latest.isValid()) latest = QDate::currentDate();
     m_startDateEdit->setDate(latest.addDays(-7));
     m_endDateEdit->setDate(latest);
     loadData();
@@ -100,6 +100,11 @@ void MainWindow::setupMenuBar() {
         m_startDateEdit->setDate(DailyDao::getEarliestDate());
         m_endDateEdit->setDate(DailyDao::getLatestDate());
         m_filterEntityType = 0;
+        m_activeCategory.clear();
+        m_model->setCategoryFilter("");
+        updateSidebarHighlight("");
+        // Re-check "全部" button
+        for(auto* b:m_sidebarBtns) b->setChecked(b->text()=="全部");
         loadData();
     });
 
@@ -112,11 +117,16 @@ void MainWindow::setupMenuBar() {
     connect(viewMenu->actions().last(), &QAction::triggered, this, &MainWindow::onShowCompareChart);
 
     viewMenu->addSeparator();
-    viewMenu->addAction("仅显示公司")->setCheckable(true);
-    connect(viewMenu->actions().last(), &QAction::triggered, this, &MainWindow::onFilterCompany);
+    auto* filterGroup = new QActionGroup(this);
+    filterGroup->setExclusive(true);
 
-    viewMenu->addAction("仅显示承包区")->setCheckable(true);
-    connect(viewMenu->actions().last(), &QAction::triggered, this, &MainWindow::onFilterContractor);
+    auto* actCompany = viewMenu->addAction("仅显示公司"); actCompany->setCheckable(true);
+    filterGroup->addAction(actCompany);
+    connect(actCompany, &QAction::triggered, this, &MainWindow::onFilterCompany);
+
+    auto* actContractor = viewMenu->addAction("仅显示承包区"); actContractor->setCheckable(true);
+    filterGroup->addAction(actContractor);
+    connect(actContractor, &QAction::triggered, this, &MainWindow::onFilterContractor);
 
     viewMenu->addAction("显示全部");
     connect(viewMenu->actions().last(), &QAction::triggered, this, &MainWindow::onFilterAll);

@@ -180,9 +180,12 @@ void DataEntryDialog::rebuildForm(int entityTypeId) {
 
     m_columns = ColumnDao::getByEntityType(entityTypeId);
 
-    // Group columns by category, preserving sort order
-    QStringList orderedCategories = {"业务", "客服", "操作", "小件员取派签质量", "运营"};
+    // Group columns by category — read all unique categories from DB
     QMap<QString, QVector<ColumnDef>> grouped;
+    QSet<QString> seenCategories;
+    for (const auto& col : m_columns) { if (!col.category.isEmpty()) seenCategories.insert(col.category); }
+    QStringList orderedCategories = seenCategories.values();
+    orderedCategories.sort();
     for (const auto& col : m_columns) {
         QString cat = col.category.isEmpty() ? "其他" : col.category;
         grouped[cat].append(col);

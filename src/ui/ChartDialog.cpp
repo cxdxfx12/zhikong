@@ -355,7 +355,7 @@ QChart* ChartDialog::buildPieChart() {
     auto eids=getEids(m_entityChecks), cids=getCids(m_metricChecks);
     auto* c=new QChart();
     if(eids.isEmpty()||cids.isEmpty()){c->setTitle("请选择实体和指标");return c;}
-    auto all=ChartService::prepareSeries(m_endDate->date(),m_endDate->date(),eids,cids);
+    auto all=ChartService::prepareSeries(m_startDate->date(),m_endDate->date(),eids,cids);
     if(all.isEmpty()){c->setTitle(QString("无数据: 实体%1 指标%2 行%3").arg(eids.size()).arg(cids.size()).arg(m_currentRows.size()));return c;}
     c->setTitle(all.first().columnName+" 占比");
     auto* pie=new QPieSeries(); pie->setLabelsVisible(true);

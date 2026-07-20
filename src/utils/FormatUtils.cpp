@@ -3,7 +3,7 @@
 
 QString FormatUtils::formatValue(double value, const ColumnDef& col) {
     if (col.dataType == "INTEGER") {
-        return QString::number(static_cast<long long>(value));
+        return QString::number(qRound64(value));
     }
     if (col.dataType == "REAL") {
         return QString::number(value, 'f', 2);
@@ -13,7 +13,7 @@ QString FormatUtils::formatValue(double value, const ColumnDef& col) {
 
 QString FormatUtils::formatValue(double value, const QString& dataType, int decimals) {
     if (dataType == "INTEGER") {
-        return QString::number(static_cast<long long>(value));
+        return QString::number(qRound64(value));
     }
     return QString::number(value, 'f', decimals);
 }

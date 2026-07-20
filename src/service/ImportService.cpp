@@ -116,10 +116,6 @@ bool ImportService::parsePreview(const QString& filePath,
 #endif
 }
 
-ImportResult ImportService::executeImport(const QString&, const QVector<ColumnMapping>&, int) {
-    ImportResult r; r.errorMessage = "Use the Import dialog button"; return r;
-}
-
 ImportResult ImportService::executeImportDirect(const QString&, int forceEntityId) {
     ImportResult result;
 
@@ -147,13 +143,16 @@ ImportResult ImportService::executeImportDirect(const QString&, int forceEntityI
         QSqlDatabase& db = Database::instance().db();
         db.transaction();
         QSqlQuery q(db);
-        q.exec(QString("DELETE FROM daily_values WHERE entity_id=%1 AND report_date BETWEEN '%2' AND '%3'")
-            .arg(forceEntityId).arg(m_cached.minDate.toString("yyyy-MM-dd")).arg(m_cached.maxDate.toString("yyyy-MM-dd")));
+        q.prepare("DELETE FROM daily_values WHERE entity_id=? AND report_date BETWEEN ? AND ?");
+        q.addBindValue(forceEntityId); q.addBindValue(m_cached.minDate.toString("yyyy-MM-dd")); q.addBindValue(m_cached.maxDate.toString("yyyy-MM-dd"));
+        q.exec();
         for (const auto& dv : allValues) {
-            q.exec(QString("DELETE FROM daily_values WHERE entity_id=%1 AND report_date='%2' AND column_id=%3")
-                .arg(dv.entityId).arg(dv.reportDate).arg(dv.columnId));
-            q.exec(QString("INSERT INTO daily_values (entity_id, report_date, column_id, value) VALUES (%1, '%2', %3, %4)")
-                .arg(dv.entityId).arg(dv.reportDate).arg(dv.columnId).arg(dv.value, 0, 'f', 6));
+            q.prepare("DELETE FROM daily_values WHERE entity_id=? AND report_date=? AND column_id=?");
+            q.addBindValue(dv.entityId); q.addBindValue(dv.reportDate); q.addBindValue(dv.columnId);
+            q.exec();
+            q.prepare("INSERT INTO daily_values (entity_id, report_date, column_id, value) VALUES (?,?,?,?)");
+            q.addBindValue(dv.entityId); q.addBindValue(dv.reportDate); q.addBindValue(dv.columnId); q.addBindValue(dv.value);
+            q.exec();
         }
         db.commit();
     }
@@ -161,8 +160,9 @@ ImportResult ImportService::executeImportDirect(const QString&, int forceEntityI
     // Verify
     {
         QSqlQuery vq(Database::instance().db());
-        vq.exec(QString("SELECT dv.column_id, cd.display_name, dv.value FROM daily_values dv JOIN column_defs cd ON dv.column_id=cd.id WHERE dv.entity_id=%1 AND dv.report_date='%2' ORDER BY dv.column_id LIMIT 8")
-            .arg(forceEntityId).arg(m_cached.minDate.toString("yyyy-MM-dd")));
+        vq.prepare("SELECT dv.column_id, cd.display_name, dv.value FROM daily_values dv JOIN column_defs cd ON dv.column_id=cd.id WHERE dv.entity_id=? AND dv.report_date=? ORDER BY dv.column_id LIMIT 8");
+        vq.addBindValue(forceEntityId); vq.addBindValue(m_cached.minDate.toString("yyyy-MM-dd"));
+        vq.exec();
         QStringList vl;
         vl << QString("缓存导入: %1行 %2值").arg(m_cached.rows.size()).arg(allValues.size());
         vl << QString("DB验证(%1):").arg(m_cached.minDate.toString("yyyy-MM-dd"));

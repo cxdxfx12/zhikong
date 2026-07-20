@@ -43,10 +43,6 @@ public:
                       QVector<ColumnMapping>& mappings,
                       QStringList& excelHeaders);
 
-    ImportResult executeImport(const QString& filePath,
-                                const QVector<ColumnMapping>& mappings,
-                                int forceEntityId = 0);
-
     ImportResult executeImportDirect(const QString& filePath, int forceEntityId);
 
     struct CachedRow { QString date; QVector<QPair<int,double>> values; };

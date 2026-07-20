@@ -234,30 +234,20 @@ void DisplayDataModel::load(const QDate& start, const QDate& end, int entityType
     // --- compute statistics rows ---
     m_statRows.clear();
     if (!m_rows.isEmpty()) {
-        // SUM row
-        DisplayRow sumRow;
-        sumRow.entityName = "合计";
-        sumRow.entityType = "";
-        for (const auto& col : m_columns) {
-            double sum = 0; int count = 0;
-            for (const auto& r : m_rows) {
-                if (r.values.contains(col.id)) { sum += r.values[col.id]; count++; }
-            }
-            sumRow.values[col.id] = sum;
-        }
-        m_statRows.append(sumRow);
+        // Only count contractor rows (skip company aggregates to avoid double-count)
+        QVector<DisplayRow> baseRows;
+        for (const auto& r : m_rows) if (r.isContractor()) baseRows.append(r);
+        if (baseRows.isEmpty()) baseRows = m_rows; // fallback if no contractors visible
 
-        // AVG row
-        DisplayRow avgRow;
-        avgRow.entityName = "平均";
-        avgRow.entityType = "";
+        DisplayRow sumRow; sumRow.entityName = "合计"; sumRow.entityType = "";
+        DisplayRow avgRow; avgRow.entityName = "平均"; avgRow.entityType = "";
         for (const auto& col : m_columns) {
-            double sum = 0; int count = 0;
-            for (const auto& r : m_rows) {
-                if (r.values.contains(col.id)) { sum += r.values[col.id]; count++; }
-            }
-            avgRow.values[col.id] = count > 0 ? sum / count : 0;
+            double sum = 0; int cnt = 0;
+            for (const auto& r : baseRows) { if (r.values.contains(col.id)) { sum += r.values[col.id]; cnt++; } }
+            sumRow.values[col.id] = sum;
+            avgRow.values[col.id] = cnt > 0 ? sum / cnt : 0;
         }
+        m_statRows.append(sumRow); m_statRows.append(avgRow);
         m_statRows.append(avgRow);
     }
 
