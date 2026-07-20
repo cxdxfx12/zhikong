@@ -102,18 +102,6 @@ void CompareDialog::setupUI() {
     ml->addLayout(filterRow);
     populateEntities(); populateMetrics();
 
-    // Splitter: allows dragging the table area larger
-    auto* splitter = new QSplitter(Qt::Vertical);
-    splitter->setChildrenCollapsible(false);
-    // Dummy spacer so there's a drag handle above the tab area
-    auto* spacer = new QWidget();
-    spacer->setMinimumHeight(0);
-    spacer->setMaximumHeight(30);
-    splitter->addWidget(spacer);
-    splitter->addWidget(m_tabWidget);
-    splitter->setSizes({0, 450});
-    ml->addWidget(splitter, 1);
-
     // === TABS ===
     m_tabWidget = new QTabWidget();
     m_metricsTable = new QTableWidget(); m_metricsTable->setAlternatingRowColors(true); m_metricsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -122,6 +110,15 @@ void CompareDialog::setupUI() {
     m_rankingTable = new QTableWidget(); m_rankingTable->setAlternatingRowColors(true); m_rankingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_rankingTable->verticalHeader()->setDefaultSectionSize(28);
     m_tabWidget->addTab(m_rankingTable, "实体恶化排行");
+
+    // Splitter with drag handle to resize table area
+    auto* splitter = new QSplitter(Qt::Vertical);
+    splitter->setChildrenCollapsible(false);
+    auto* spacer = new QWidget(); spacer->setMaximumHeight(8);
+    splitter->addWidget(spacer);
+    splitter->addWidget(m_tabWidget);
+    splitter->setSizes({0, 500});
+    ml->addWidget(splitter, 1);
 
     // Connections
     connect(m_refreshBtn, &QPushButton::clicked, this, &CompareDialog::onRefresh);
