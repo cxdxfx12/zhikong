@@ -1,0 +1,33 @@
+# Build
+build/
+*.o
+*.obj
+*.exe
+moc_*
+ui_*
+qrc_*
+*.pro.user
+Makefile
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Qt Creator
+*.autosave
