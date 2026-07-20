@@ -248,7 +248,6 @@ void DisplayDataModel::load(const QDate& start, const QDate& end, int entityType
             avgRow.values[col.id] = cnt > 0 ? sum / cnt : 0;
         }
         m_statRows.append(sumRow); m_statRows.append(avgRow);
-        m_statRows.append(avgRow);
     }
 
     endResetModel();
