@@ -152,7 +152,7 @@ bool Database::initialize() {
 
     // ========== 操作 ==========
     insertCol("delivery_stay_rate",   "交货滞留率",    "REAL",   "%",   1, "NONE", "操作", 0, 14);
-    insertCol("return_stay",          "回货滞留",      "INTEGER","票",  0, "SUM",  "操作", 0, 15);
+    insertCol("return_stay",          "回货滞留",      "REAL",   "%",   0, "AVG",  "操作", 0, 15);
     insertCol("delivery_schedule_score","分频次交货考核","REAL",  "分",  1, "NONE", "操作", 0, 16);
     insertCol("outbound_timely_rate1","出仓及时率1阶",  "REAL",   "%",   1, "NONE", "操作", 0, 17);
     insertCol("outbound_timely_rate2","出仓及时率2阶",  "REAL",   "%",   1, "NONE", "操作", 0, 18);
@@ -198,6 +198,14 @@ bool Database::initialize() {
         updateCat("work_order_fine",       "客服");
         updateCat("delivery_stay_rate",    "操作");
         updateCat("return_stay",           "操作");
+        // Fix return_stay data type: was INTEGER, should be REAL (value is decimal)
+        auto fixType = [&](const QString& key, const QString& type, const QString& unit) {
+            QSqlQuery uq(m_db);
+            uq.prepare("UPDATE column_defs SET data_type=?, unit=? WHERE key=? AND data_type!=?");
+            uq.addBindValue(type); uq.addBindValue(unit); uq.addBindValue(key); uq.addBindValue(type);
+            uq.exec();
+        };
+        fixType("return_stay", "REAL", "%");
         updateCat("delivery_schedule_score","操作");
         updateCat("outbound_timely_rate1", "操作");
         updateCat("outbound_timely_rate2", "操作");
