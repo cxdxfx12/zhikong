@@ -55,6 +55,8 @@ private:
     // Entity & metric selectors
     QVector<QCheckBox*> m_entityChecks;
     QVector<QCheckBox*> m_metricChecks;
+    QVBoxLayout* m_entityLayout2 = nullptr;
+    QVBoxLayout* m_metricLayout2 = nullptr;
 
     // Cached data for export
     QVector<ColumnDef> m_showCols;

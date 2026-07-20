@@ -5,7 +5,6 @@
 #include "utils/FormatUtils.h"
 #include <QHBoxLayout>
 #include <QGroupBox>
-#include <QScrollArea>
 #include <QSqlQuery>
 #include <QHeaderView>
 #include <QFileDialog>
@@ -83,21 +82,20 @@ void CompareDialog::setupUI() {
 
     // === Entity & metric selectors ===
     auto* filterRow = new QHBoxLayout();
-    auto* eg = new QGroupBox("选择实体"); eg->setObjectName("entityGroup");
-    auto* el = new QVBoxLayout(eg); el->setSpacing(1);
-    populateEntities();
-    auto* es = new QScrollArea(); es->setWidget(eg); es->setWidgetResizable(true); es->setMaximumHeight(100);
-    filterRow->addWidget(es);
+    auto* eg = new QGroupBox("选择实体");
+    m_entityLayout2 = new QVBoxLayout(eg); m_entityLayout2->setSpacing(1);
+    filterRow->addWidget(eg, 1);
 
-    auto* mg = new QGroupBox("选择指标"); mg->setObjectName("metricGroup");
-    auto* ml2 = new QVBoxLayout(mg); ml2->setSpacing(1);
+    auto* mg = new QGroupBox("选择指标");
+    m_metricLayout2 = new QVBoxLayout(mg); m_metricLayout2->setSpacing(1);
     auto* allCheck = new QCheckBox("全选"); allCheck->setChecked(true);
-    ml2->addWidget(allCheck);
-    populateMetrics();
+    m_metricLayout2->addWidget(allCheck);
     connect(allCheck, &QCheckBox::toggled, this, [this](bool on){ for(auto* cb:m_metricChecks) cb->setChecked(on); });
-    auto* ms = new QScrollArea(); ms->setWidget(mg); ms->setWidgetResizable(true); ms->setMaximumHeight(100);
-    filterRow->addWidget(ms, 1);
+    filterRow->addWidget(mg, 2);
     ml->addLayout(filterRow);
+
+    populateEntities();
+    populateMetrics();
 
     // === Tabs ===
     m_tabWidget = new QTabWidget();
@@ -123,31 +121,24 @@ void CompareDialog::setupUI() {
 
 void CompareDialog::populateEntities() {
     for(auto* cb:m_entityChecks) delete cb; m_entityChecks.clear();
-    // Find entity group box and its layout
-    auto* eg = findChild<QGroupBox*>("entityGroup");
-    if(!eg) return;
-    auto* lay = qobject_cast<QVBoxLayout*>(eg->layout());
-    if(!lay) return;
+    if(!m_entityLayout2) return;
     auto tree = EntityDao::getTree();
     for(const auto& comp:tree) {
         auto* cb = new QCheckBox(comp.entity.name); cb->setProperty("eid",comp.entity.id); cb->setChecked(true);
-        m_entityChecks<<cb; lay->addWidget(cb);
+        m_entityChecks<<cb; m_entityLayout2->addWidget(cb);
         for(const auto& ctr:comp.children) {
             auto* cb2 = new QCheckBox("  "+ctr.entity.name); cb2->setProperty("eid",ctr.entity.id); cb2->setChecked(true);
-            m_entityChecks<<cb2; lay->addWidget(cb2);
+            m_entityChecks<<cb2; m_entityLayout2->addWidget(cb2);
         }
     }
 }
 
 void CompareDialog::populateMetrics() {
     for(auto* cb:m_metricChecks) delete cb; m_metricChecks.clear();
-    auto* mg = findChild<QGroupBox*>("metricGroup");
-    if(!mg) return;
-    auto* lay = qobject_cast<QVBoxLayout*>(mg->layout());
-    if(!lay) return;
+    if(!m_metricLayout2) return;
     for(const auto& col:ColumnDao::getAll(false)) {
         auto* cb = new QCheckBox(col.displayNameWithUnit()); cb->setProperty("cid",col.id); cb->setChecked(true);
-        m_metricChecks<<cb; lay->addWidget(cb);
+        m_metricChecks<<cb; m_metricLayout2->addWidget(cb);
     }
 }
 
