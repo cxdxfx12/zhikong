@@ -64,7 +64,7 @@ void CompareDialog::setupUI() {
     m_endPrev->setCalendarPopup(true); m_endPrev->setDisplayFormat("yyyy-MM-dd");
     topBar->addWidget(m_endPrev);
 
-    m_refreshBtn = new QPushButton("刷新");
+    m_refreshBtn = new QPushButton("🔄 刷新");
     m_refreshBtn->setStyleSheet("QPushButton{background:#118DFF;color:white;border:none;padding:6px 16px;border-radius:4px;font-weight:bold;} QPushButton:hover{background:#0B6ED4;}");
     topBar->addWidget(m_refreshBtn);
 
@@ -218,24 +218,36 @@ QMap<int,double> CompareDialog::queryPeriod(int entTypeFilter, const QDate& star
     for(auto* cb:m_entityChecks) if(cb->isChecked()) eids<<cb->property("eid").toInt();
     if(eids.isEmpty()) return result;
 
-    QStringList es; for(int id:eids) es<<QString::number(id);
+    QStringList ph; for(int i=0;i<eids.size();++i) ph<<"?";
     QSqlQuery q(Database::instance().db());
-    QString sql = QString(
-        "SELECT dv.column_id, SUM(dv.value) FROM daily_values dv "
+    QString sql = "SELECT dv.column_id, SUM(dv.value) FROM daily_values dv "
         "JOIN entities e ON dv.entity_id=e.id "
-        "WHERE dv.entity_id IN (%1) AND dv.report_date BETWEEN '%2' AND '%3'")
-        .arg(es.join(",")).arg(start.toString("yyyy-MM-dd")).arg(end.toString("yyyy-MM-dd"));
-    if(entTypeFilter > 0) sql += QString(" AND e.type_id=%1").arg(entTypeFilter);
+        "WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.report_date BETWEEN ? AND ?";
+    if(entTypeFilter > 0) sql += " AND e.type_id=?";
     sql += " GROUP BY dv.column_id";
-    if(q.exec(sql)) while(q.next()) result[q.value(0).toInt()] = q.value(1).toDouble();
+    q.prepare(sql);
+    for(int id:eids) q.addBindValue(id);
+    q.addBindValue(start.toString("yyyy-MM-dd")); q.addBindValue(end.toString("yyyy-MM-dd"));
+    if(entTypeFilter > 0) q.addBindValue(entTypeFilter);
+    if(q.exec()) while(q.next()) result[q.value(0).toInt()] = q.value(1).toDouble();
     return result;
 }
 
 void CompareDialog::compute() {
     // Query both periods (only contractor rows for accurate comparison)
-    auto curData = queryPeriod(2, m_startCur->date(), m_endCur->date()); // type_id=2 = contractor only
-    auto prevData = queryPeriod(2, m_startPrev->date(), m_endPrev->date());
+    auto curData = queryPeriod(0, m_startCur->date(), m_endCur->date()); // 0 = all entity types
+    auto prevData = queryPeriod(0, m_startPrev->date(), m_endPrev->date());
     m_curData = curData; m_prevData = prevData;
+
+    if(curData.isEmpty() && prevData.isEmpty()){
+        m_metricsTable->setRowCount(0);
+        m_rankingTable->setRowCount(0);
+        m_cardOutbound->setText("无数据");
+        m_cardInbound->setText("无数据");
+        m_cardSignRate->setText("无数据");
+        m_cardWarning->setText("无数据");
+        return;
+    }
 
     // Build metric list
     m_showCols.clear();
@@ -337,7 +349,10 @@ void CompareDialog::buildRankingTable(const QMap<int,double>& cur, const QMap<in
     auto queryEntity = [&](const QDate& start, const QDate& end) -> QMap<int,double> {
         QMap<int,double> r;
         QSqlQuery q(Database::instance().db());
-        q.prepare(QString("SELECT dv.entity_id, SUM(dv.value) FROM daily_values dv WHERE dv.entity_id IN (%1) AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id").arg(es.join(",")));
+        QStringList ph2; for(int i=0;i<eids.size();++i) ph2<<"?";
+        QString esql = "SELECT dv.entity_id, SUM(dv.value) FROM daily_values dv WHERE dv.entity_id IN ("+ph2.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
+        q.prepare(esql);
+        for(int id:eids) q.addBindValue(id);
         q.addBindValue(rankCid); q.addBindValue(start.toString("yyyy-MM-dd")); q.addBindValue(end.toString("yyyy-MM-dd"));
         if(q.exec()) while(q.next()) r[q.value(0).toInt()] = q.value(1).toDouble();
         return r;
