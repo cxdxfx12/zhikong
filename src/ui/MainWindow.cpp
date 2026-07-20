@@ -96,7 +96,7 @@ void MainWindow::setupMenuBar() {
 
     m_actRefresh = dataMenu->addAction("刷新(&R)");
     m_actRefresh->setShortcut(QKeySequence("F5"));
-    dataMenu->addAction("环比对比...");
+    dataMenu->addAction("数据分析中心...");
     connect(dataMenu->actions().last(), &QAction::triggered, this, [this]() { CompareDialog(this).exec(); });
 
     dataMenu->addAction("清空筛选");
@@ -241,7 +241,7 @@ void MainWindow::setupToolBar() {
     toolbar->addWidget(exportBtn);
     connect(exportBtn, &QPushButton::clicked, this, &MainWindow::onExportExcel);
 
-    auto* compareBtn = new QPushButton("📈 环比");
+    auto* compareBtn = new QPushButton("📊 数据分析中心");
     toolbar->addWidget(compareBtn);
     connect(compareBtn, &QPushButton::clicked, this, [this]() { CompareDialog(this).exec(); });
 

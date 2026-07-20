@@ -5,6 +5,7 @@
 #include "utils/FormatUtils.h"
 #include <QHBoxLayout>
 #include <QGridLayout>
+#include <QSplitter>
 #include <QGroupBox>
 #include <QSqlQuery>
 #include <QHeaderView>
@@ -46,7 +47,7 @@ static const QSet<QString> POSITIVE_KEYS = {
 
 CompareDialog::CompareDialog(QWidget* parent) : QDialog(parent) {
     m_positiveKeys = POSITIVE_KEYS;
-    setupUI(); setWindowTitle("快递质控环比分析"); resize(1300, 850);
+    setupUI(); setWindowTitle("数据分析中心"); resize(1300, 850);
 }
 
 void CompareDialog::setupUI() {
@@ -54,7 +55,7 @@ void CompareDialog::setupUI() {
 
     // === TOP BAR ===
     auto* topBar = new QHBoxLayout();
-    topBar->addWidget(new QLabel("<b style='font-size:16px;color:#333;'>快递质控环比分析</b>"));
+    topBar->addWidget(new QLabel("<b style='font-size:16px;color:#333;'>数据分析中心</b>"));
     topBar->addStretch();
     m_periodLabel = new QLabel(); m_periodLabel->setStyleSheet("color:#888;font-size:11px;");
     topBar->addWidget(m_periodLabel);
@@ -101,6 +102,18 @@ void CompareDialog::setupUI() {
     ml->addLayout(filterRow);
     populateEntities(); populateMetrics();
 
+    // Splitter: allows dragging the table area larger
+    auto* splitter = new QSplitter(Qt::Vertical);
+    splitter->setChildrenCollapsible(false);
+    // Dummy spacer so there's a drag handle above the tab area
+    auto* spacer = new QWidget();
+    spacer->setMinimumHeight(0);
+    spacer->setMaximumHeight(30);
+    splitter->addWidget(spacer);
+    splitter->addWidget(m_tabWidget);
+    splitter->setSizes({0, 450});
+    ml->addWidget(splitter, 1);
+
     // === TABS ===
     m_tabWidget = new QTabWidget();
     m_metricsTable = new QTableWidget(); m_metricsTable->setAlternatingRowColors(true); m_metricsTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -109,7 +122,6 @@ void CompareDialog::setupUI() {
     m_rankingTable = new QTableWidget(); m_rankingTable->setAlternatingRowColors(true); m_rankingTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     m_rankingTable->verticalHeader()->setDefaultSectionSize(28);
     m_tabWidget->addTab(m_rankingTable, "实体恶化排行");
-    ml->addWidget(m_tabWidget, 1);
 
     // Connections
     connect(m_refreshBtn, &QPushButton::clicked, this, &CompareDialog::onRefresh);
