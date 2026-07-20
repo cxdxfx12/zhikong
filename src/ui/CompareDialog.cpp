@@ -143,10 +143,39 @@ void CompareDialog::populateEntities() {
 void CompareDialog::populateMetrics() {
     for(auto* cb:m_metricChecks) delete cb; m_metricChecks.clear();
     if(!m_metricLayout2) return;
+
+    // Group by category, same order as sidebar
+    QStringList catOrder = {"业务", "客服", "操作", "小件员取派签质量", "运营"};
+    QMap<QString, QVector<ColumnDef>> grouped;
     for(const auto& col:ColumnDao::getAll(false)) {
-        auto* cb = new QCheckBox(col.displayNameWithUnit()); cb->setProperty("cid",col.id); cb->setChecked(true);
-        connect(cb, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
-        m_metricChecks<<cb; m_metricLayout2->addWidget(cb);
+        QString cat = col.category.isEmpty() ? "其他" : col.category;
+        grouped[cat].append(col);
+    }
+
+    for(const auto& cat : catOrder) {
+        if(!grouped.contains(cat) || grouped[cat].isEmpty()) continue;
+        auto* label = new QLabel("▎" + cat);
+        label->setStyleSheet("color:#888;font-weight:bold;font-size:11px;padding-top:4px;");
+        m_metricLayout2->addWidget(label);
+
+        for(const auto& col : grouped[cat]) {
+            auto* cb = new QCheckBox("  "+col.displayNameWithUnit());
+            cb->setProperty("cid",col.id); cb->setChecked(true);
+            connect(cb, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
+            m_metricChecks<<cb; m_metricLayout2->addWidget(cb);
+        }
+    }
+    // Uncategorized
+    if(grouped.contains("其他")) {
+        auto* label = new QLabel("▎其他");
+        label->setStyleSheet("color:#888;font-weight:bold;font-size:11px;padding-top:4px;");
+        m_metricLayout2->addWidget(label);
+        for(const auto& col : grouped["其他"]) {
+            auto* cb = new QCheckBox("  "+col.displayNameWithUnit());
+            cb->setProperty("cid",col.id); cb->setChecked(true);
+            connect(cb, &QCheckBox::toggled, this, &CompareDialog::onRefresh);
+            m_metricChecks<<cb; m_metricLayout2->addWidget(cb);
+        }
     }
 }
 
