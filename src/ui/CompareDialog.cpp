@@ -4,6 +4,7 @@
 #include "db/ColumnDao.h"
 #include "utils/FormatUtils.h"
 #include <QHBoxLayout>
+#include <QGridLayout>
 #include <QGroupBox>
 #include <QSqlQuery>
 #include <QHeaderView>
@@ -73,7 +74,7 @@ void CompareDialog::setupUI() {
     m_endPrev = new QDateEdit(QDate::currentDate().addDays(-7)); m_endPrev->setCalendarPopup(true); m_endPrev->setDisplayFormat("yyyy-MM-dd");
     topBar->addWidget(m_endPrev);
 
-    m_refreshBtn = new QPushButton("🔄 刷新"); m_refreshBtn->setStyleSheet("QPushButton{background:#118DFF;color:white;border:none;padding:6px 14px;border-radius:4px;font-weight:bold;}");
+    m_refreshBtn = new QPushButton("▶ 开始对比"); m_refreshBtn->setStyleSheet("QPushButton{background:#118DFF;color:white;border:none;padding:6px 14px;border-radius:4px;font-weight:bold;}");
     topBar->addWidget(m_refreshBtn);
     auto* exportBtn = new QPushButton("导出CSV"); topBar->addWidget(exportBtn);
     ml->addLayout(topBar);
@@ -95,15 +96,10 @@ void CompareDialog::setupUI() {
     auto* filterRow = new QHBoxLayout();
     auto* eg = new QGroupBox("实体"); m_entityLayout2 = new QVBoxLayout(eg); m_entityLayout2->setSpacing(1);
     filterRow->addWidget(eg, 1);
-    auto* mg = new QGroupBox("指标 (按五大类)"); m_metricLayout2 = new QVBoxLayout(mg); m_metricLayout2->setSpacing(1);
-    filterRow->addWidget(mg, 2);
+    auto* mg = new QGroupBox("指标"); m_metricLayout2 = new QVBoxLayout(mg); m_metricLayout2->setSpacing(1);
+    filterRow->addWidget(mg, 3);
     ml->addLayout(filterRow);
     populateEntities(); populateMetrics();
-
-    // Big action button
-    auto* goBtn = new QPushButton("▶ 开始对比");
-    goBtn->setStyleSheet("QPushButton{background:#27ae60;color:white;border:none;padding:10px;border-radius:6px;font-size:15px;font-weight:bold;} QPushButton:hover{background:#219a52;}");
-    goBtn->setMinimumHeight(38); ml->addWidget(goBtn);
 
     // === TABS ===
     m_tabWidget = new QTabWidget();
@@ -117,7 +113,6 @@ void CompareDialog::setupUI() {
 
     // Connections
     connect(m_refreshBtn, &QPushButton::clicked, this, &CompareDialog::onRefresh);
-    connect(goBtn, &QPushButton::clicked, this, &CompareDialog::onRefresh);
     connect(exportBtn, &QPushButton::clicked, this, &CompareDialog::onExport);
     connect(m_periodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CompareDialog::onPeriodChanged);
     connect(m_startCur, &QDateEdit::dateChanged, this, &CompareDialog::onRefresh);
@@ -144,13 +139,35 @@ void CompareDialog::populateEntities() {
 void CompareDialog::populateMetrics() {
     for(auto* cb:m_metricChecks) delete cb; m_metricChecks.clear();
     if(!m_metricLayout2) return;
+
+    // Remove old widgets and sub-layouts
+    QLayoutItem* child;
+    while((child=m_metricLayout2->takeAt(0))!=nullptr) {
+        if(child->widget()) { delete child->widget(); }
+        else if(child->layout()) {
+            QLayoutItem* sub; while((sub=child->layout()->takeAt(0))!=nullptr) { delete sub->widget(); delete sub; }
+            delete child->layout();
+        }
+        delete child;
+    }
+
     QStringList cats = {"业务", "客服", "操作", "小件员取派签质量", "运营"};
     QMap<QString,QVector<ColumnDef>> g;
     for(const auto& col:ColumnDao::getAll(false)) { QString c=col.category.isEmpty()?"其他":col.category; g[c].append(col); }
+
     for(const auto& cat:cats) { if(!g.contains(cat)||g[cat].isEmpty()) continue;
         auto* l=new QLabel("▎"+cat); l->setStyleSheet("color:#888;font-weight:bold;font-size:11px;padding-top:4px;"); m_metricLayout2->addWidget(l);
-        for(const auto& col:g[cat]) { auto* cb=new QCheckBox("  "+col.displayNameWithUnit()); cb->setProperty("cid",col.id); cb->setChecked(true);
-            connect(cb,&QCheckBox::toggled,this,&CompareDialog::onRefresh); m_metricChecks<<cb; m_metricLayout2->addWidget(cb); }
+        auto* grid = new QGridLayout(); grid->setSpacing(1);
+        const int COLS = 3;
+        for(int i=0; i<g[cat].size(); ++i) {
+            const auto& col = g[cat][i];
+            auto* cb=new QCheckBox(col.displayNameWithUnit()); cb->setProperty("cid",col.id); cb->setChecked(true);
+            cb->setStyleSheet("font-size:11px;");
+            connect(cb,&QCheckBox::toggled,this,&CompareDialog::onRefresh);
+            m_metricChecks<<cb;
+            grid->addWidget(cb, i/COLS, i%COLS);
+        }
+        m_metricLayout2->addLayout(grid);
     }
 }
 
@@ -184,7 +201,7 @@ QMap<int,double> CompareDialog::queryPeriod(int etFilter, const QDate& s, const 
     if(eids.isEmpty()) return r;
     QStringList ph; for(int i=0;i<eids.size();++i) ph<<"?";
     QSqlQuery q(Database::instance().db());
-    QString sql="SELECT dv.column_id,SUM(dv.value) FROM daily_values dv JOIN entities e ON dv.entity_id=e.id WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.report_date BETWEEN ? AND ?";
+    QString sql="SELECT dv.column_id, CASE WHEN cd.aggregate_type='AVG' THEN AVG(dv.value) ELSE SUM(dv.value) END FROM daily_values dv JOIN entities e ON dv.entity_id=e.id JOIN column_defs cd ON dv.column_id=cd.id WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.report_date BETWEEN ? AND ?";
     if(etFilter>0) sql+=" AND e.type_id=?";
     sql+=" GROUP BY dv.column_id";
     q.prepare(sql); for(int id:eids) q.addBindValue(id);
@@ -283,7 +300,7 @@ void CompareDialog::buildRankingTable(const QMap<int,double>& cur, const QMap<in
 
     QStringList ph; for(int i=0;i<eids.size();++i) ph<<"?";
     auto qe=[&](const QDate& s,const QDate& e)->QMap<int,double>{ QMap<int,double> r; QSqlQuery q(Database::instance().db());
-        QString sql="SELECT dv.entity_id,SUM(dv.value) FROM daily_values dv WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
+        QString sql="SELECT dv.entity_id, CASE WHEN cd.aggregate_type='AVG' THEN AVG(dv.value) ELSE SUM(dv.value) END FROM daily_values dv JOIN column_defs cd ON dv.column_id=cd.id WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
         q.prepare(sql); for(int id:eids) q.addBindValue(id); q.addBindValue(rankCid); q.addBindValue(s.toString("yyyy-MM-dd")); q.addBindValue(e.toString("yyyy-MM-dd"));
         if(q.exec()) while(q.next()) r[q.value(0).toInt()]=q.value(1).toDouble(); return r; };
     auto ec=qe(m_startCur->date(),m_endCur->date()), ep=qe(m_startPrev->date(),m_endPrev->date());
