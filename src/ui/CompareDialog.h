@@ -32,20 +32,21 @@ private:
     void buildRankingTable(const QMap<int,double>& cur, const QMap<int,double>& prev);
     QMap<int,double> queryPeriod(int entTypeFilter, const QDate& start, const QDate& end);
 
-    // Top controls
-    QComboBox* m_periodCombo = nullptr;
-    QDateEdit* m_startCur = nullptr;
-    QDateEdit* m_endCur = nullptr;
-    QDateEdit* m_startPrev = nullptr;
-    QDateEdit* m_endPrev = nullptr;
-    QPushButton* m_refreshBtn = nullptr;
+    // Helper: is this indicator "bigger is better"?
+    bool isPositive(const QString& key) const;
+    // Helper: get color for change direction
+    QColor changeColor(double diff, const ColumnDef& col) const;
 
-    // Summary cards
-    QLabel* m_cardOutbound = nullptr;
-    QLabel* m_cardInbound = nullptr;
-    QLabel* m_cardSignRate = nullptr;
-    QLabel* m_cardWarning = nullptr;
+    // Controls
+    QComboBox* m_periodCombo = nullptr;
+    QDateEdit* m_startCur = nullptr, *m_endCur = nullptr;
+    QDateEdit* m_startPrev = nullptr, *m_endPrev = nullptr;
+    QPushButton* m_refreshBtn = nullptr;
     QLabel* m_periodLabel = nullptr;
+
+    // Summary cards (4 quadrants)
+    struct CardWidget { QLabel* title; QLabel* value; QLabel* change; QLabel* status; };
+    CardWidget m_cardEff, m_cardQuality, m_cardService, m_cardVolume;
 
     // Tabs
     QTabWidget* m_tabWidget = nullptr;
@@ -58,7 +59,10 @@ private:
     QVBoxLayout* m_entityLayout2 = nullptr;
     QVBoxLayout* m_metricLayout2 = nullptr;
 
-    // Cached data for export
+    // Cached data
     QVector<ColumnDef> m_showCols;
     QMap<int,double> m_curData, m_prevData;
+
+    // Positive indicator keys
+    QSet<QString> m_positiveKeys;
 };
