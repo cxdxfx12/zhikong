@@ -248,7 +248,7 @@ QMap<int,double> CompareDialog::queryPeriod(int etFilter, const QDate& s, const 
     q.addBindValue(s.toString("yyyy-MM-dd")); q.addBindValue(e.toString("yyyy-MM-dd"));
     if(etFilter>0) q.addBindValue(etFilter);
     if(q.exec()) while(q.next()) {
-        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=(q.record().count()>2)?q.value(2).toInt():1;
+        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=q.value(2).toInt();
         auto col=ColumnDao::getById(cid);
         r[cid] = (col.aggregateType=="AVG"&&cnt>0) ? sum/cnt : sum;
     }
@@ -348,7 +348,7 @@ void CompareDialog::buildRankingTable(const QMap<int,double>& cur, const QMap<in
         QString sql="SELECT dv.entity_id, SUM(dv.value), COUNT(dv.value) FROM daily_values dv WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
         q.prepare(sql); for(int id:eids) q.addBindValue(id); q.addBindValue(rankCid); q.addBindValue(s.toString("yyyy-MM-dd")); q.addBindValue(e.toString("yyyy-MM-dd"));
         if(q.exec()) while(q.next()) {
-        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=(q.record().count()>2)?q.value(2).toInt():1;
+        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=q.value(2).toInt();
         auto col=ColumnDao::getById(cid);
         r[cid] = (col.aggregateType=="AVG"&&cnt>0) ? sum/cnt : sum;
     } return r; };
