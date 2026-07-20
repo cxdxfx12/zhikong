@@ -103,7 +103,8 @@ void CompareDialog::populateMetrics() {
 
 void CompareDialog::onPeriodChanged(int idx) {
     QDate today = QDate::currentDate();
-    QDate startCur, endCur, startPrev, endPrev;
+    QDate startCur = m_startCur->date(), endCur = m_endCur->date();
+    QDate startPrev = m_startPrev->date(), endPrev = m_endPrev->date();
     int dow = today.dayOfWeek(); // Mon=1, Sun=7
 
     switch(idx) {
@@ -125,7 +126,8 @@ void CompareDialog::onPeriodChanged(int idx) {
         startPrev = startCur.addYears(-1);
         endPrev = QDate(today.year()-1, today.month(), today.day()).addDays(-1);
         break;
-    default: return;
+    case 3: // 自定义 — keep current dates, just compute
+        break;
     }
 
     m_startCur->setDate(startCur); m_endCur->setDate(endCur);
