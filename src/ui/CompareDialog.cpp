@@ -93,14 +93,45 @@ void CompareDialog::setupUI() {
     cardsRow->addWidget(makeCard(this, m_cardVolume.title, m_cardVolume.value, m_cardVolume.change, m_cardVolume.status));
     ml->addLayout(cardsRow);
 
-    // === FILTERS ===
+    // === FILTERS (collapsible) ===
     auto* filterRow = new QHBoxLayout();
-    auto* eg = new QGroupBox("实体"); m_entityLayout2 = new QVBoxLayout(eg); m_entityLayout2->setSpacing(1);
-    filterRow->addWidget(eg, 1);
-    auto* mg = new QGroupBox("指标"); m_metricLayout2 = new QVBoxLayout(mg); m_metricLayout2->setSpacing(1);
-    filterRow->addWidget(mg, 3);
+
+    // Entity panel
+    auto* entityPanel = new QWidget();
+    auto* entityPanelLay = new QVBoxLayout(entityPanel); entityPanelLay->setContentsMargins(0,0,0,0); entityPanelLay->setSpacing(0);
+    auto* entityToggle = new QPushButton("▾ 实体选择"); entityToggle->setStyleSheet("QPushButton{text-align:left;padding:4px 8px;font-weight:bold;border:none;background:#f0f0f0;}");
+    entityToggle->setCursor(Qt::PointingHandCursor);
+    auto* entityContent = new QWidget();
+    m_entityLayout2 = new QVBoxLayout(entityContent); m_entityLayout2->setSpacing(1); m_entityLayout2->setContentsMargins(4,2,4,2);
+    entityPanelLay->addWidget(entityToggle);
+    entityPanelLay->addWidget(entityContent);
+    filterRow->addWidget(entityPanel, 1);
+
+    // Metric panel
+    auto* metricPanel = new QWidget();
+    auto* metricPanelLay = new QVBoxLayout(metricPanel); metricPanelLay->setContentsMargins(0,0,0,0); metricPanelLay->setSpacing(0);
+    auto* metricToggle = new QPushButton("▾ 指标选择"); metricToggle->setStyleSheet("QPushButton{text-align:left;padding:4px 8px;font-weight:bold;border:none;background:#f0f0f0;}");
+    metricToggle->setCursor(Qt::PointingHandCursor);
+    auto* metricContent = new QWidget();
+    m_metricLayout2 = new QVBoxLayout(metricContent); m_metricLayout2->setSpacing(1); m_metricLayout2->setContentsMargins(4,2,4,2);
+    metricPanelLay->addWidget(metricToggle);
+    metricPanelLay->addWidget(metricContent);
+    filterRow->addWidget(metricPanel, 3);
+
     ml->addLayout(filterRow);
     populateEntities(); populateMetrics();
+
+    // Toggle collapse/expand
+    connect(entityToggle, &QPushButton::clicked, this, [entityToggle, entityContent](){
+        bool vis = entityContent->isVisible();
+        entityContent->setVisible(!vis);
+        entityToggle->setText(vis ? "▸ 实体选择" : "▾ 实体选择");
+    });
+    connect(metricToggle, &QPushButton::clicked, this, [metricToggle, metricContent](){
+        bool vis = metricContent->isVisible();
+        metricContent->setVisible(!vis);
+        metricToggle->setText(vis ? "▸ 指标选择" : "▾ 指标选择");
+    });
 
     // === TABS ===
     m_tabWidget = new QTabWidget();
