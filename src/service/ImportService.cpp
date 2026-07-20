@@ -28,7 +28,7 @@ bool ImportService::parsePreview(const QString& filePath,
     QMap<QString, int> cleanToId;
     for (const auto& col : allCols) {
         QString c = col.displayName;
-        c.remove(QRegularExpression("[,，、。\\s\\(\\)（）ppm]"));
+        c.remove(QRegularExpression("[,，、。\\s\\(\\)（）pPmM]"));
         if (!c.isEmpty()) cleanToId[c] = col.id;
     }
 
@@ -42,7 +42,7 @@ bool ImportService::parsePreview(const QString& filePath,
         excelHeaders << header;
 
         QString cleanHeader = header;
-        cleanHeader.remove(QRegularExpression("[,，、。\\s\\(\\)（）pmPM]"));
+        cleanHeader.remove(QRegularExpression("[,，、。\\s\\(\\)（）pPmM]"));
         ColumnMapping m; m.excelHeader = header;
         if (cleanToId.contains(cleanHeader)) {
             m.columnDefId = cleanToId[cleanHeader]; m.isMapped = true;
@@ -50,7 +50,7 @@ bool ImportService::parsePreview(const QString& filePath,
         } else {
             int bestId = 0, bestLen = 0;
             for (const auto& cd : allCols) {
-                QString cdClean = cd.displayName; cdClean.remove(QRegularExpression("[,，、。\\s\\(\\)（）pmPM]"));
+                QString cdClean = cd.displayName; cdClean.remove(QRegularExpression("[,，、。\\s\\(\\)（）pPmM]"));
                 if (cleanHeader.contains(cdClean) || cdClean.contains(cleanHeader)) {
                     if (cdClean.length() > bestLen) { bestId = cd.id; bestLen = cdClean.length(); }
                 }

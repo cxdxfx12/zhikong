@@ -482,7 +482,8 @@ void MainWindow::onExportExcel() {
         "Excel (*.xlsx);;CSV (*.csv)");
     if (path.isEmpty()) return;
 
-    auto rows = QVector<DisplayRow>(m_model->rowCount());
+    int dataRows = m_model->rowCount() - (m_model->showStats() ? 2 : 0); // exclude stat rows
+    auto rows = QVector<DisplayRow>(dataRows);
     for (int i = 0; i < m_model->rowCount(); ++i)
         rows[i] = m_model->rowAt(i);
 
@@ -506,7 +507,8 @@ void MainWindow::onExportCsv() {
         "CSV (*.csv)");
     if (path.isEmpty()) return;
 
-    auto rows = QVector<DisplayRow>(m_model->rowCount());
+    int dataRows = m_model->rowCount() - (m_model->showStats() ? 2 : 0); // exclude stat rows
+    auto rows = QVector<DisplayRow>(dataRows);
     for (int i = 0; i < m_model->rowCount(); ++i)
         rows[i] = m_model->rowAt(i);
 

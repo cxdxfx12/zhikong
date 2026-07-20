@@ -207,7 +207,11 @@ void DataEntryDialog::rebuildForm(int entityTypeId) {
         for (const auto& col : grouped[catName]) {
             QWidget* editor = createEditor(col);
 
-            if (col.needsAggregation()) {
+            // Aggregated company fields are read-only (auto-computed from contractors)
+            if (col.needsAggregation() && entityTypeId == 1) {
+                editor->setEnabled(false);
+                editor->setToolTip("此字段由承包区自动汇总，不可手动编辑");
+            } else if (col.needsAggregation()) {
                 editor->setToolTip(QString("汇总方式: %1 (公司级数据自动计算)")
                     .arg(col.aggregateType == "SUM" ? "求和" : "平均"));
             }
@@ -224,6 +228,10 @@ void DataEntryDialog::rebuildForm(int entityTypeId) {
         m_formLayout->addRow(header);
         for (const auto& col : grouped["其他"]) {
             QWidget* editor = createEditor(col);
+            if (col.needsAggregation() && entityTypeId == 1) {
+                editor->setEnabled(false);
+                editor->setToolTip("此字段由承包区自动汇总，不可手动编辑");
+            }
             m_editorMap[col.id] = editor;
             m_formLayout->addRow(col.displayNameWithUnit(), editor);
         }
@@ -240,12 +248,8 @@ void DataEntryDialog::clearForm() {
         QLayoutItem* fieldItem = m_formLayout->itemAt(0, QFormLayout::FieldRole);
         m_formLayout->removeRow(0);
         // Delete the widgets manually to avoid leaks
-        if (labelItem && labelItem->widget()) {
-            labelItem->widget()->deleteLater();
-        }
-        if (fieldItem && fieldItem->widget()) {
-            fieldItem->widget()->deleteLater();
-        }
+        if (labelItem) { if (labelItem->widget()) labelItem->widget()->deleteLater(); delete labelItem; }
+        if (fieldItem) { if (fieldItem->widget()) fieldItem->widget()->deleteLater(); delete fieldItem; }
     }
 }
 
@@ -312,7 +316,7 @@ void DataEntryDialog::onSave() {
         } else if (col.dataType == "REAL") {
             val = qobject_cast<QDoubleSpinBox*>(editor)->value();
         } else {
-            val = qobject_cast<QLineEdit*>(editor)->text().toDouble();
+            continue; // TEXT columns: skip (DB stores REAL, display would be lost)
         }
 
         DailyValue dv;

@@ -1,4 +1,5 @@
 #include "ChartDialog.h"
+#include "db/Database.h"
 #include "db/EntityDao.h"
 #include "db/ColumnDao.h"
 #include "db/DailyDao.h"
@@ -9,6 +10,7 @@
 #include <QScrollArea>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QSqlQuery>
 #include <QDateTimeAxis>
 #include <QValueAxis>
 #include <QLineSeries>
@@ -25,6 +27,7 @@
 
 static const QColor PBI[] = {"#118DFF","#FE9666","#13CB9D","#9B6BFF","#F9CE4B","#38C6F4","#FF6E7A","#55D98D","#C084FC","#F4A261"};
 static const int PBI_N = 10;
+static QString placeholders(int n) { QStringList l; for(int i=0;i<n;++i) l<<"?"; return l.join(","); }
 
 ChartDialog::ChartDialog(QWidget* parent) : QDialog(parent) {
     setupUI(); setWindowTitle("数据分析图表"); resize(1280, 760);
@@ -116,7 +119,7 @@ void ChartDialog::setupUI() {
 
     if(!m_entityChecks.isEmpty()) m_entityChecks.first()->setChecked(true);
     if(!m_metricChecks.isEmpty()) m_metricChecks.first()->setChecked(true);
-    onPresetDate(0);
+    m_presetCombo->setCurrentIndex(5); // default to "全部"
 }
 
 void ChartDialog::populateEntities() {
@@ -214,7 +217,20 @@ void ChartDialog::buildChart() {
     else if(t==4) c=buildComboChart();
     else if(t==5) c=buildTrendChart();
     else c=buildPieChart();
-    if(c){ auto* old=m_chartView->chart(); styleChart(c); m_chartView->setChart(c); delete old; }
+    if(c){
+        // Direct DB dump for first entity/date
+        auto eids=getEids(m_entityChecks), cids=getCids(m_metricChecks);
+        QString dump;
+        if(!eids.isEmpty()&&!cids.isEmpty()){
+            QSqlQuery dq(Database::instance().db());
+            dq.prepare("SELECT column_id, COUNT(*), SUM(value) FROM daily_values WHERE entity_id=? AND report_date BETWEEN ? AND ? AND column_id IN ("+placeholders(cids.size())+") GROUP BY column_id ORDER BY column_id");
+            dq.addBindValue(eids.first()); dq.addBindValue(m_startDate->date().toString("yyyy-MM-dd")); dq.addBindValue(m_endDate->date().toString("yyyy-MM-dd"));
+            for(int id:cids) dq.addBindValue(id);
+            if(dq.exec()){ QStringList vals; while(dq.next()) vals<<QString("c%1(%2行Σ%3)").arg(dq.value(0).toInt()).arg(dq.value(1).toInt()).arg(dq.value(2).toDouble()); dump=vals.join(" "); }
+        }
+        c->setTitle(c->title()+" | DB:"+(dump.isEmpty()?"EMPTY":dump));
+        auto* old=m_chartView->chart(); styleChart(c); m_chartView->setChart(c); delete old;
+    }
 }
 
 QChart* ChartDialog::buildLineChart(bool smooth) {
@@ -225,7 +241,7 @@ QChart* ChartDialog::buildLineChart(bool smooth) {
     m_currentRows = DailyDao::queryForChart(m_startDate->date(),m_endDate->date(),eids,cids);
     showDataTable(m_currentRows);
     if(all.isEmpty()){c->setTitle(QString("无数据: 实体%1 指标%2 行%3").arg(eids.size()).arg(cids.size()).arg(m_currentRows.size()));return c;}
-    c->setTitle(all.first().columnName+" 趋势");
+    c->setTitle(QString("%1 | E:%2 C:%3 R:%4").arg(all.first().columnName).arg(eids.size()).arg(cids.size()).arg(m_currentRows.size()));
     auto* ax=new QDateTimeAxis(); ax->setFormat("M/d"); c->addAxis(ax,Qt::AlignBottom);
     auto* ay=new QValueAxis(); c->addAxis(ay,Qt::AlignLeft);
     for(int i=0;i<all.size();++i){
@@ -265,16 +281,20 @@ QChart* ChartDialog::buildBarChart(bool stacked) {
 
 QChart* ChartDialog::buildComboChart() {
     auto eids=getEids(m_entityChecks);
+    auto cids=getCids(m_metricChecks);
     auto* c=new QChart();
-    if(eids.isEmpty()){c->setTitle("请选择实体");return c;}
+    if(eids.isEmpty()||cids.isEmpty()){c->setTitle("请选实体和指标");return c;}
 
-    int barCid=m_barMetricCombo->currentData().toInt();
-    int lineCid=m_lineMetricCombo->currentData().toInt();
-    if(barCid<=0||lineCid<=0){c->setTitle("请选择柱指标和线指标");return c;}
+    // First checked metric = bars, rest = lines
+    int barCid=cids.first();
+    QVector<int> lineCids;
+    for(int i=1;i<cids.size();++i) lineCids<<cids[i];
+    if(lineCids.isEmpty()) lineCids<<barCid; // fallback: same metric
 
     auto barData=ChartService::prepareSeries(m_startDate->date(),m_endDate->date(),eids,{barCid});
-    auto lineData=ChartService::prepareSeries(m_startDate->date(),m_endDate->date(),eids,{lineCid});
-    m_currentRows = DailyDao::queryForChart(m_startDate->date(),m_endDate->date(),eids,{barCid,lineCid});
+    auto lineData=ChartService::prepareSeries(m_startDate->date(),m_endDate->date(),eids,lineCids);
+    QVector<int> allCids=cids;
+    m_currentRows = DailyDao::queryForChart(m_startDate->date(),m_endDate->date(),eids,allCids);
     showDataTable(m_currentRows);
 
     QString barName=barData.isEmpty()?"指标1":barData.first().columnName;

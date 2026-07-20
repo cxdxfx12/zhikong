@@ -205,6 +205,8 @@ void ColumnManageDialog::onDelete() {
     if (ColumnDao::remove(id)) {
         refreshTable();
         clearForm();
+    } else {
+        QMessageBox::critical(this, "错误", "删除失败，该列可能被数据引用");
     }
 }
 
@@ -263,7 +265,8 @@ void ColumnManageDialog::onSave() {
     if (m_editingId > 0) {
         ok = ColumnDao::update(c);
     } else {
-        c.sortOrder = ColumnDao::getAll().size();
+        auto all = ColumnDao::getAll();
+        c.sortOrder = all.isEmpty() ? 0 : all.last().sortOrder + 1;
         ok = ColumnDao::insert(c);
     }
 

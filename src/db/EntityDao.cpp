@@ -67,9 +67,11 @@ QVector<Entity> EntityDao::getContractors(int parentCompanyId) {
     q.prepare(sql);
     if (parentCompanyId > 0) q.bindValue(":pid", parentCompanyId);
 
-    if (q.exec()) {
-        while (q.next()) result.append(entityFromQuery(q));
+    if (!q.exec()) {
+        qWarning() << "EntityDao::getContractors failed:" << q.lastError().text();
+        return result;
     }
+    while (q.next()) result.append(entityFromQuery(q));
     return result;
 }
 

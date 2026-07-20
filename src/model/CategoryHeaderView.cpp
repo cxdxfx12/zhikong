@@ -97,8 +97,9 @@ void CategoryHeaderView::paintEvent(QPaintEvent* event) {
         QRect catRect(x1, 0, x2 - x1, m_topRowHeight);
 
         // Category background
-        QColor bg = catColors.value(cat, QColor::fromHsl((defaultColorIdx * 60) % 360, 180, 200));
-        defaultColorIdx++;
+        QColor bg;
+        if (catColors.contains(cat)) { bg = catColors[cat]; }
+        else { bg = QColor::fromHsl((defaultColorIdx * 60) % 360, 180, 200); defaultColorIdx++; }
         painter.fillRect(catRect, bg);
         painter.setPen(Qt::white);
         painter.drawText(catRect.adjusted(12, 0, -8, 0), Qt::AlignLeft | Qt::AlignVCenter, "▎" + cat);

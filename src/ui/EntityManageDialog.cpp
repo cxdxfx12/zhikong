@@ -185,6 +185,8 @@ void EntityManageDialog::onSaveNew() {
     Entity e;
     if (m_editingId > 0) {
         e = EntityDao::getById(m_editingId);
+    } else {
+        e.isActive = true; // new entities default to active
     }
 
     QString typeName = m_typeCombo->currentText();
@@ -201,7 +203,6 @@ void EntityManageDialog::onSaveNew() {
     }
 
     e.name = name;
-    e.isActive = true;
 
     bool ok = false;
     if (m_editingId > 0) {
