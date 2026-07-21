@@ -173,8 +173,22 @@ bool Database::initialize() {
     insertCol("sms_rate",             "短信",          "REAL",   "%",   0, "AVG",  "小件员取派签质量", 0, 31);
 
     // ========== 运营 ==========
-    insertCol("headquarter_fine",     "总部罚款",      "REAL",   "元",  1, "NONE", "运营", 0, 32);
-    insertCol("kpi_score",            "网点KPI",      "REAL",   "分",  0, "AVG",  "运营", 1, 33);
+    insertCol("headquarter_fine",     "总部罚款",        "REAL",   "元",  1, "NONE", "运营", 0, 32);
+    insertCol("biz_volume_achieve",   "业务量达成",      "REAL",   "%",   0, "AVG",  "运营", 0, 33);
+    insertCol("order_loss_rate",      "单量净流失率",    "REAL",   "%",   0, "AVG",  "运营", 0, 34);
+    insertCol("scatter_first_pickup_rate2","散单首揽达标率","REAL",  "%",   0, "AVG",  "运营", 0, 35);
+    insertCol("sign_achieve_rate",    "签收达标率",      "REAL",   "%",   0, "AVG",  "运营", 0, 36);
+    insertCol("inbound_complain_rate2","进港投诉率",     "REAL",   "ppm", 0, "AVG",  "运营", 0, 37);
+    insertCol("loss_rate",            "遗失率",          "REAL",   "%",   0, "AVG",  "运营", 0, 38);
+    insertCol("complaint_damage_rate","投诉破损率",      "REAL",   "%",   0, "AVG",  "运营", 0, 39);
+    insertCol("track_break_3day_rate","三日轨迹中断率",  "REAL",   "%",   0, "AVG",  "运营", 0, 40);
+    insertCol("ticket_resolve_rate",  "工单及时解决率",  "REAL",   "%",   0, "AVG",  "运营", 0, 41);
+    insertCol("label_fulfill_rate",   "标签履约率",      "REAL",   "%",   0, "AVG",  "运营", 0, 42);
+    insertCol("delivery_stay_rate2",  "交货滞留率",      "REAL",   "%",   0, "AVG",  "运营", 0, 43);
+    insertCol("malicious_violation",  "恶意违规",        "INTEGER","次",  0, "SUM",  "运营", 0, 44);
+    insertCol("standard_exec",        "标准化执行",      "REAL",   "%",   0, "AVG",  "运营", 0, 45);
+    insertCol("full_ondemand_rate",   "全量按需上门率",  "REAL",   "%",   0, "AVG",  "运营", 0, 46);
+    insertCol("kpi_score",            "网点KPI",        "REAL",   "分",  0, "AVG",  "运营", 1, 47);
 
     // ---- MIGRATION: update existing rows that may have wrong categories/names ----
     {
@@ -223,6 +237,20 @@ bool Database::initialize() {
         updateCat("call_rate",             "小件员取派签质量");
         updateCat("sms_rate",              "小件员取派签质量");
         updateCat("headquarter_fine",      "运营");
+        updateCat("biz_volume_achieve",    "运营");
+        updateCat("order_loss_rate",       "运营");
+        updateCat("scatter_first_pickup_rate2","运营");
+        updateCat("sign_achieve_rate",     "运营");
+        updateCat("inbound_complain_rate2","运营");
+        updateCat("loss_rate",             "运营");
+        updateCat("complaint_damage_rate", "运营");
+        updateCat("track_break_3day_rate", "运营");
+        updateCat("ticket_resolve_rate",   "运营");
+        updateCat("label_fulfill_rate",    "运营");
+        updateCat("delivery_stay_rate2",   "运营");
+        updateCat("malicious_violation",   "运营");
+        updateCat("standard_exec",         "运营");
+        updateCat("full_ondemand_rate",    "运营");
         updateCat("kpi_score",             "运营");
 
         auto updateName = [&](const QString& key, const QString& name) {

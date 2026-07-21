@@ -41,7 +41,9 @@ static const QSet<QString> POSITIVE_KEYS = {
     "pickup_rate", "intercept_rate", "outbound_timely_rate1", "outbound_timely_rate2",
     "delivery_schedule_score", "scatter_achievement_rate", "first_pickup_rate",
     "on_demand", "call_rate", "sms_rate", "customer_voice", "kpi_score",
-    "auto_throughput"
+    "auto_throughput", "biz_volume_achieve", "sign_achieve_rate",
+    "scatter_first_pickup_rate2", "ticket_resolve_rate", "label_fulfill_rate",
+    "standard_exec", "full_ondemand_rate"
 };
 // Everything else = negative (smaller is better): fake_sign, miss_rate, complaint, fine, penalty, unsign, etc.
 
