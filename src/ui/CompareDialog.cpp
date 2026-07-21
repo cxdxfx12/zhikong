@@ -243,17 +243,13 @@ QMap<int,double> CompareDialog::queryPeriod(int etFilter, const QDate& s, const 
     if(eids.isEmpty()) return r;
     QStringList ph; for(int i=0;i<eids.size();++i) ph<<"?";
     QSqlQuery q(Database::instance().db());
-    QString sql="SELECT dv.column_id, SUM(dv.value), COUNT(dv.value) FROM daily_values dv JOIN entities e ON dv.entity_id=e.id WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.report_date BETWEEN ? AND ?";
+    QString sql="SELECT dv.column_id, SUM(dv.value) FROM daily_values dv JOIN entities e ON dv.entity_id=e.id WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.report_date BETWEEN ? AND ?";
     if(etFilter>0) sql+=" AND e.type_id=?";
     sql+=" GROUP BY dv.column_id";
     q.prepare(sql); for(int id:eids) q.addBindValue(id);
     q.addBindValue(s.toString("yyyy-MM-dd")); q.addBindValue(e.toString("yyyy-MM-dd"));
     if(etFilter>0) q.addBindValue(etFilter);
-    if(q.exec()) while(q.next()) {
-        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=q.value(2).toInt();
-        auto col=ColumnDao::getById(cid);
-        r[cid] = (col.aggregateType=="AVG"&&cnt>0) ? sum/cnt : sum;
-    }
+    if(q.exec()) while(q.next()) r[q.value(0).toInt()]=q.value(1).toDouble();
     return r;
 }
 
@@ -347,13 +343,11 @@ void CompareDialog::buildRankingTable(const QMap<int,double>& cur, const QMap<in
 
     QStringList ph; for(int i=0;i<eids.size();++i) ph<<"?";
     auto qe=[&](const QDate& s,const QDate& e)->QMap<int,double>{ QMap<int,double> r; QSqlQuery q(Database::instance().db());
-        QString sql="SELECT dv.entity_id, SUM(dv.value), COUNT(dv.value) FROM daily_values dv WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
+        QString sql="SELECT dv.entity_id, SUM(dv.value) FROM daily_values dv WHERE dv.entity_id IN ("+ph.join(",")+") AND dv.column_id=? AND dv.report_date BETWEEN ? AND ? GROUP BY dv.entity_id";
         q.prepare(sql); for(int id:eids) q.addBindValue(id); q.addBindValue(rankCid); q.addBindValue(s.toString("yyyy-MM-dd")); q.addBindValue(e.toString("yyyy-MM-dd"));
-        if(q.exec()) while(q.next()) {
-        int cid=q.value(0).toInt(); double sum=q.value(1).toDouble(); int cnt=q.value(2).toInt();
-        auto col=ColumnDao::getById(cid);
-        r[cid] = (col.aggregateType=="AVG"&&cnt>0) ? sum/cnt : sum;
-    } return r; };
+        if(q.exec()) while(q.next()) r[q.value(0).toInt()]=q.value(1).toDouble();
+        return r;
+    };
     auto ec=qe(m_startCur->date(),m_endCur->date()), ep=qe(m_startPrev->date(),m_endPrev->date());
 
     QVector<QPair<int,double>> sorted; for(auto it=ec.begin();it!=ec.end();++it){
